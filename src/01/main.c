@@ -71,14 +71,14 @@ int main() {
     // and manually set registers + PC to the start of the loop.
     // ------------------------------------------------------------
     cpu.regs[1] = 100000;  // BROJ ITERACIJA (menjaj ovde koliko hoces)
-    // ITERATION COUNT (change here as you want)
+                           // ITERATION COUNT (change here as you want)
     cpu.regs[2] = 1;       // decrement
-    // decrement
+                           // decrement
     cpu.regs[3] = 0;       // limit (0)
-    // limit (0)
+                           // limit (0)
     cpu.pc = 12;           // start petlje (posle 3*4 bajta)
-    // loop start (after 3*4 bytes)
-// ------------------------------------------------------------
+                           // loop start (after 3*4 bytes)
+    // ------------------------------------------------------------
 
     while (cpu.running) {
         cpu_step(&cpu);
