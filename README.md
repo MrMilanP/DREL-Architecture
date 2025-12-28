@@ -22,9 +22,9 @@ This project is not just about CPU performance—it is a strategy to **democrati
 
 This repository contains the defining documents of the DREL standard:
 
-* **[`/docs/DREL_Architecture_Reference_Manual.pdf`](#)** The primary **Whitepaper**. [cite_start]Covers the high-level philosophy, the "Legacy Tax" problem, the VRAM Wall solution, and the strategic vision for a post-CUDA compute world[cite: 529].
+* **[`/docs/DREL_Architecture_Reference_Manual.pdf`](docs/DREL_Architecture_Reference_Manual.pdf)** The primary **Whitepaper**. [cite_start]Covers the high-level philosophy, the "Legacy Tax" problem, the VRAM Wall solution, and the strategic vision for a post-CUDA compute world[cite: 529].
     
-* **[`/specs/DREL_Specification_v0.1.md`](#)** The engineering **Technical Specification**. Contains the "hard" implementation details derived from the draft, including:
+* **[`/specs/DREL_Specification_v0.1.md`](specs/DREL_Specification_v0.1.md)** The engineering **Technical Specification**. Contains the "hard" implementation details derived from the draft, including:
     * [cite_start]**ISA Encoding:** Fixed 32-bit Load/Store architecture[cite: 534].
     * [cite_start]**MSR Definitions:** `IA32_DREL_CTL` (0xC0000080) & `EXIT_REASON` codes[cite: 603, 848].
     * [cite_start]**ABI & Register File:** R0-R31, Scalable Vectors (VEC), and Hardware Aliasing[cite: 557, 564].
