@@ -1,5 +1,6 @@
 # DREL — Dynamic RISC Execution Layer
 
+[![DOI](https://zenodo.org/badge/1123943427.svg)](https://doi.org/10.5281/zenodo.18072640)
 ![License](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)
 ![Status](https://img.shields.io/badge/Status-Architecture%20RFC-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-x86__64%20%2F%20Heterogeneous-orange.svg)
