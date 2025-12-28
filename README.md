@@ -23,13 +23,21 @@ This project is not just about CPU performance—it is a strategy to **democrati
 
 This repository contains the defining documents of the DREL standard:
 
-* **[`/docs/DREL_Architecture_Reference_Manual.pdf`](docs/DREL_Architecture_Reference_Manual.pdf)** The primary **Whitepaper**. Covers the high-level philosophy, the "Legacy Tax" problem, the VRAM Wall solution, and the strategic vision for a post-CUDA compute world.
+* **[`/docs/DREL_Architecture_Reference_Manual.pdf`](docs/DREL_Architecture_Reference_Manual.pdf)**: The primary **Whitepaper**. Covers the high-level philosophy, the "Legacy Tax" problem, the VRAM Wall solution, and the strategic vision for a post-CUDA compute world.
+* **[`/docs/PERFORMANCE_PROJECTIONS.md`](docs/PERFORMANCE_PROJECTIONS.md)**: **Efficiency Analysis**. Detailed simulation results showing a **~33% reduction** in front-end decoding overhead.
+* **[`/specs/DREL_Specification_v0.1.md`](specs/DREL_Specification_v0.1.md)**: The engineering **Technical Specification**. Contains the "hard" implementation details, including ISA encoding, MSR definitions, and ABI.
 
-* **[`/specs/DREL_Specification_v0.1.md`](specs/DREL_Specification_v0.1.md)** The engineering **Technical Specification**. Contains the "hard" implementation details derived from the draft, including:
-    * **ISA Encoding:** Fixed 32-bit Load/Store architecture.
-    * **MSR Definitions:** `IA32_DREL_CTL` (0xC0000080) & `EXIT_REASON` codes.
-    * **ABI & Register File:** R0-R31, Scalable Vectors (VEC), and Hardware Aliasing.
-    * **Binary Format:** `.drel` section definitions for PE/ELF.
+---
+
+## Performance Projections
+
+Simulations using the DREL SDK v0.1 indicate a significant efficiency leap by removing the "Legacy Tax" of CISC decoding:
+
+* **Decoding Efficiency:** **32.97% reduction** in front-end cycles.
+* **Energy Recovery:** Reclaims thermal headroom by bypassing variable-length instruction analysis.
+* **Deterministic Fetch:** Fixed 32-bit alignment eliminates pipeline bubbles.
+
+*Detailed report available in [Performance Projections](docs/PERFORMANCE_PROJECTIONS.md).*
 
 ---
 
