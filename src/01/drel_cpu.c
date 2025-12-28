@@ -4,11 +4,25 @@
 #include <stdlib.h>
 #include <string.h>
 
-void cpu_init(DREL_CPU* cpu) {
+
+#ifndef DREL_TRACE
+#define DREL_TRACE 0
+#endif
+
+#if DREL_TRACE
+#define TRACEF(...) printf(__VA_ARGS__)
+#else
+#define TRACEF(...) do{}while(0)
+#endif
+
+
+void cpu_init(DREL_CPU * cpu) {
     memset(cpu->regs, 0, sizeof(cpu->regs));
     cpu->pc = 0;
     cpu->memory = (uint8_t*)malloc(MEMORY_SIZE);
-    memset(cpu->memory, 0, MEMORY_SIZE);
+    if (cpu->memory != NULL) {
+        memset(cpu->memory, 0, MEMORY_SIZE);
+    }
     cpu->running = true;
 }
 
@@ -24,7 +38,8 @@ int cpu_load_bin_file(DREL_CPU* cpu, const char* filename) {
     size_t bytes_read = fread(cpu->memory, 1, MEMORY_SIZE, f);
     fclose(f);
 
-    printf("[CPU] Loaded binary '%s' (%zu bytes).\n", filename, bytes_read);
+    TRACEF("[CPU] Loaded binary '%s' (%zu bytes).\n", filename, bytes_read);
+    (void)bytes_read;
     return 1;
 }
 
@@ -46,11 +61,11 @@ void cpu_step(DREL_CPU* cpu) {
 
     cpu->regs[0] = 0; // R0 je uvek nula | R0 is always zero
 
-    // EXECUTE - Izvršavanje instrukcije
+    // EXECUTE - IzvrÅ¡avanje instrukcije
     // EXECUTE - Instruction execution
     switch (opcode) {
     case OP_EXIT:
-        printf("[EXEC] EXIT at PC=%lld\n", cpu->pc - 4);
+        TRACEF("[EXEC] EXIT at PC=%lld\n", cpu->pc - 4);
         cpu->running = false;
         break;
     case OP_ADDI:
@@ -75,8 +90,7 @@ void cpu_step(DREL_CPU* cpu) {
         uint8_t b_rs2 = (instr >> 16) & 0x1F;
         int16_t offset = (int16_t)(instr & 0xFFFF);
 
-        printf("[EXEC] BEQ R%d, R%d, offset %d\n", b_rs1, b_rs2, offset);
-
+        TRACEF("[EXEC] BEQ R%d, R%d, offset %d\n", b_rs1, b_rs2, offset);
         if (cpu->regs[b_rs1] == cpu->regs[b_rs2]) {
             // Skok: PC = PC_stari + offset
             // Jump: PC = PC_old + offset
@@ -89,7 +103,7 @@ void cpu_step(DREL_CPU* cpu) {
         // Bezuslovni skok
         // Unconditional jump
         int16_t offset = (int16_t)(instr & 0xFFFF);
-        printf("[EXEC] JMP offset %d\n", offset);
+        TRACEF("[EXEC] JMP offset %d\n", offset);
         cpu->pc = (cpu->pc - 4) + offset;
     }
     break;
