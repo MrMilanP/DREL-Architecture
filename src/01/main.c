@@ -1,105 +1,134 @@
+#include "drel_cpu.h"
+#include "drel_isa.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include "drel_cpu.h"
-#include "drel_asm.h"
+#include <string.h>
 
-// Simulacija hardverskog kašnjenja dekodera
-// Hardware decoder penalty simulation
-int simulate_x86_decoder_penalty() {
-    // x86 dekoder mora da odredi dužinu instrukcije.
-    // x86 decoder must determine instruction length.
 
-    // Neka je prosecna instrukcija laka (1 ciklus), ali svaka treca je teška (3-4 ciklusa).
-    // Assume average instruction is easy (1 cycle), but every third is complex (3-4 cycles).
-    int r = rand() % 100;
-    if (r < 70) return 1; // Brzo | Fast (70%)
-    if (r < 90) return 2; // Srednje | Medium (20%)
-    return 4;             // Sporo/Kompleksno | Slow/Complex (10%)
+#ifndef DREL_TRACE
+#define DREL_TRACE 0
+#endif
+
+#if DREL_TRACE
+#define TRACEF(...) printf(__VA_ARGS__)
+#else
+#define TRACEF(...) do{}while(0)
+#endif
+
+
+void cpu_init(DREL_CPU * cpu) {
+    memset(cpu->regs, 0, sizeof(cpu->regs));
+    cpu->pc = 0;
+    cpu->memory = (uint8_t*)malloc(MEMORY_SIZE);
+    if (cpu->memory != NULL) {
+        memset(cpu->memory, 0, MEMORY_SIZE);
+    }
+    cpu->running = true;
 }
 
-int main() {
-    // Inicijalizacija generatora slucajnih brojeva
-    // Initialize random number generator
-    srand((unsigned int)time(NULL));
-
-    // 1. Priprema DREL programa (Beskonacna petlja koja se vrti N puta)
-    // 1. DREL program preparation (Infinite loop running N times)
-    // R1 = 1000000 (Brojac | Counter)
-    // LOOP:
-    //   SUB R1, R1, 1
-    //   BEQ R1, R0, EXIT
-    //   JMP LOOP
-    const char* source_code[] = {
-        "LI   R1, 1000",      // R1 = 1000 (Mali broj za test | Small number for testing)
-        "LI   R2, 1",         // R2 = 1 (Dekrement | Decrement)
-        "LI   R3, 0",         // R3 = 0 (Granicnik | Limit)
-
-        // POCETAK PETLJE | LOOP START (PC=12)
-        "SUB  R1, R1, R2",    // [12] R1 = R1 - R2
-        "BEQ  R1, R3, 8",     // [16] Ako je R1 == R3, skoci na EXIT | If R1 == R3, jump to EXIT
-        "JMP  -8",            // [20] Nazad na SUB | Back to SUB
-        "EXIT"                // [24] Kraj programa | End of program
-    };
-
-    int lines = sizeof(source_code) / sizeof(source_code[0]);
-    uint32_t bin_buffer[128];
-
-    // Asembliranje i cuvanje binarnog fajla
-    // Assembling and saving the binary file
-    drel_assemble_program(source_code, lines, bin_buffer);
-    drel_save_to_bin("bench.drel", bin_buffer, lines);
-
-    // --- SIMULACIJA | SIMULATION ---
-    printf("\n=== ARCHITECTURE BENCHMARK (Simulated Decoder Overhead) ===\n");
-    printf("Executing loop logic...\n\n");
-
-    long long cycles_drel = 0;
-    long long cycles_x86 = 0;
-
-    // Inicijalizacija i ucitavanje virtuelne mašine
-    // VM initialization and loading
-    DREL_CPU cpu;
-    cpu_init(&cpu);
-    cpu_load_bin_file(&cpu, "bench.drel");
-
-    // Direktno podešavanje registra za test sa velikim brojem iteracija
-    // Direct register setup for high-iteration testing
-    cpu.regs[1] = 100000; // 100.000 iteracija | iterations
-
-    while (cpu.running) {
-        // Izvrši jedan korak procesora
-        // Execute one CPU step
-        cpu_step(&cpu);
-
-        // --- MODELOVANJE PERFORMANSI | PERFORMANCE MODELING ---
-
-        // DREL: Fiksna širina (4 bajta) = Predvidiv Fetch = 1 ciklus penala
-        // DREL: Fixed width (4 bytes) = Predictable Fetch = 1 cycle penalty
-        cycles_drel += 1;
-
-        // x86 Legacy: Varijabilna širina = Pipeline Bubble / Kašnjenje dekodiranja dužine
-        // x86 Legacy: Variable width = Pipeline Bubble / Length Decoding penalty
-        cycles_x86 += simulate_x86_decoder_penalty();
+int cpu_load_bin_file(DREL_CPU* cpu, const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
+        printf("[CPU Error] Cannot open file: %s\n", filename);
+        return 0;
     }
 
-    // Prikaz rezultata
-    // Display results
-    printf("\n------------------------------------------------------------\n");
-    printf("RESULTS (Lower is Better):\n");
-    printf("------------------------------------------------------------\n");
-    printf("DREL Decoder Cycles: %lld (Base Line)\n", cycles_drel);
-    printf("x86  Decoder Cycles: %lld (Legacy Tax)\n", cycles_x86);
-    printf("------------------------------------------------------------\n");
+    // Ucitaj fajl direktno u memoriju procesora
+    // Load file directly into processor memory
+    size_t bytes_read = fread(cpu->memory, 1, MEMORY_SIZE, f);
+    fclose(f);
 
-    // Izracunavanje dobitka u efikasnosti
-    // Efficiency gain calculation
-    double improvement = ((double)(cycles_x86 - cycles_drel) / cycles_x86) * 100.0;
-    printf("EFFICIENCY GAIN: +%.2f%% less front-end work\n", improvement);
-    printf("------------------------------------------------------------\n");
+    TRACEF("[CPU] Loaded binary '%s' (%zu bytes).\n", filename, bytes_read);
+    (void)bytes_read;
+    return 1;
+}
 
-    // Oslobadanje resursa
-    // Resource cleanup
-    cpu_free(&cpu);
-    return 0;
+void cpu_step(DREL_CPU* cpu) {
+    if (!cpu->running) return;
+
+    // FETCH - Dohvatanje instrukcije
+    // FETCH - Instruction fetching
+    uint32_t instr = *(uint32_t*)&cpu->memory[cpu->pc];
+    cpu->pc += 4;
+
+    // DECODE - Dekodiranje polja
+    // DECODE - Field decoding
+    uint8_t opcode = (instr >> 26) & 0x3F;
+    uint8_t rd = (instr >> 21) & 0x1F;
+    uint8_t rs1 = (instr >> 16) & 0x1F;
+    uint8_t rs2 = (instr >> 11) & 0x1F;
+    int16_t imm = (int16_t)(instr & 0xFFFF);
+
+    cpu->regs[0] = 0; // R0 je uvek nula | R0 is always zero
+
+    // EXECUTE - IzvrÅ¡avanje instrukcije
+    // EXECUTE - Instruction execution
+    switch (opcode) {
+    case OP_EXIT:
+        TRACEF("[EXEC] EXIT at PC=%lld\n", cpu->pc - 4);
+        cpu->running = false;
+        break;
+    case OP_ADDI:
+        cpu->regs[rd] = cpu->regs[rs1] + imm;
+        break;
+    case OP_ADD:
+        cpu->regs[rd] = cpu->regs[rs1] + cpu->regs[rs2];
+        break;
+    case OP_LI:
+        cpu->regs[rd] = imm;
+        break;
+    case OP_SUB:
+        // Oduzimanje registara
+        // Register subtraction
+        cpu->regs[rd] = cpu->regs[rs1] - cpu->regs[rs2];
+        break;
+    case OP_BEQ:
+        // Grananje ako su registri jednaki
+        // Branch if registers are equal
+    {
+        uint8_t b_rs1 = (instr >> 21) & 0x1F;
+        uint8_t b_rs2 = (instr >> 16) & 0x1F;
+        int16_t offset = (int16_t)(instr & 0xFFFF);
+
+        TRACEF("[EXEC] BEQ R%d, R%d, offset %d\n", b_rs1, b_rs2, offset);
+        if (cpu->regs[b_rs1] == cpu->regs[b_rs2]) {
+            // Skok: PC = PC_stari + offset
+            // Jump: PC = PC_old + offset
+            cpu->pc = (cpu->pc - 4) + offset;
+        }
+    }
+    break;
+    case OP_JMP:
+    {
+        // Bezuslovni skok
+        // Unconditional jump
+        int16_t offset = (int16_t)(instr & 0xFFFF);
+        TRACEF("[EXEC] JMP offset %d\n", offset);
+        cpu->pc = (cpu->pc - 4) + offset;
+    }
+    break;
+    default:
+        printf("[FAULT] Illegal Opcode: 0x%X\n", opcode);
+        cpu->running = false;
+        break;
+    }
+    cpu->regs[0] = 0;
+}
+
+void cpu_dump_regs(DREL_CPU* cpu) {
+    int i; // Deklaracija van petlje za stari standard | Declaration outside loop for old standard
+    printf("\n--- DREL STATE ---\n");
+    for (i = 0; i < 8; i++) { 
+        printf("R%d: %lld\n", i, cpu->regs[i]);
+    }
+    printf("PC: %lld\n------------------\n", cpu->pc);
+}
+
+// Oslobadanje memorije procesora
+// Freeing processor memory
+void cpu_free(DREL_CPU* cpu) {
+    if (cpu->memory) {
+        free(cpu->memory);
+        cpu->memory = NULL; // Sigurnosni reset | Safety reset
+    }
 }
