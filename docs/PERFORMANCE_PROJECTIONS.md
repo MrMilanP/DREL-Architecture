@@ -64,6 +64,8 @@ DREL Native: [##############################] 3,003
                                             |
                          [ SAVED ENERGY / EXECUTION HEADROOM ]
 
+
+```
 ## 4. Architectural Implications
 
 ### 4.1 The "Legacy Tax" Removal
